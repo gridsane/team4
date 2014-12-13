@@ -94,6 +94,7 @@ var ForecastMapView = TabPaneView.extend({
         if (!this.map) {
             ymaps.ready(function () {
                 self.map = new ymaps.Map(self.el, {
+                    controls: ['zoomControl'],
                     center: [locality.lat, locality.lon],
                     zoom: locality.zoom
                 });
@@ -110,7 +111,6 @@ var ForecastMapView = TabPaneView.extend({
                     geoid: locality.geoid,
                     placemark: placemark
                 });
-
 
                 self.clasterer = new ymaps.Clusterer();
                 self.clasterer.add(placemark);
