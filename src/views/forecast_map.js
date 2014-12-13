@@ -7,6 +7,8 @@ var ForecastMapView = TabPaneView.extend({
 
     tabName: 'map',
     placemarks: [],
+    map: null,
+    clasterer: null,
 
     initialize: function (options) {
         this.initializeTabs(options.state);
@@ -69,7 +71,7 @@ var ForecastMapView = TabPaneView.extend({
 
             for (var i = self.placemarks.length - 1; i >= 0; i--) {
                 if (-1 === nextGeoids.indexOf(self.placemarks[i].geoid)) {
-                    self.map.geoObjects.remove(self.placemarks[i].placemark);
+                    self.clasterer.remove(self.placemarks[i].placemark);
                 } else {
                     prevGeoids.push(self.placemarks[i].geoid);
                 }
@@ -77,7 +79,7 @@ var ForecastMapView = TabPaneView.extend({
 
             for (var i = nextPlacemarks.length - 1; i >= 0; i--) {
                 if (-1 === prevGeoids.indexOf(nextPlacemarks[i].geoid)) {
-                    self.map.geoObjects.add(nextPlacemarks[i].placemark);
+                    self.clasterer.add(nextPlacemarks[i].placemark);
                 }
             };
 
@@ -109,7 +111,10 @@ var ForecastMapView = TabPaneView.extend({
                     placemark: placemark
                 });
 
-                self.map.geoObjects.add(placemark);
+
+                self.clasterer = new ymaps.Clusterer();
+                self.clasterer.add(placemark);
+                self.map.geoObjects.add(self.clasterer);
 
                 self.boundsChange();
             });
