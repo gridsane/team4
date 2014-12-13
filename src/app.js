@@ -10,6 +10,7 @@ var ForecastTabsView = require('./views/forecast_tabs');
 var ForecastShortView = require('./views/forecast_short');
 var ForecastFullView = require('./views/forecast_full');
 var ForecastHoursView = require('./views/forecast_hours');
+var ForecastMapView = require('./views/forecast_map');
 var NowView = require('./views/now');
 var TitleView = require('./views/title');
 
@@ -45,6 +46,11 @@ var initialize = function () {
             forecastHours: new ForecastHoursView({
                 el: $('.forecast_hours'),
                 collection: models.forecast,
+                state: state,
+            }),
+            forecastMap: new ForecastMapView({
+                el: $('.forecast_map'),
+                model: models.today,
                 state: state,
             })
         };

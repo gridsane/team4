@@ -13,6 +13,10 @@ var tabs = [
     {
         title: 'наглядно',
         link: 'hours'
+    },
+    {
+        title: 'на карте',
+        link: 'map'
     }
 ];
 
