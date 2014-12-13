@@ -19,7 +19,7 @@ var ForecastMapView = TabPaneView.extend({
             balloonContent: fact ? balloonTemplate({
                 locality: locality,
                 fact: fact.toJSON()
-            }) : "loading...",
+            }) : '<img src="/assets/images/ajax-loader.gif"/>',
             iconContent: iconTemplate({
                 temp: locality.temp,
                 weather_icon: locality.weather_icon
