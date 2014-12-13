@@ -1,4 +1,18 @@
 .forecast_map {
     width: 100%;
     height: 600px;
+
+    &__icon {
+        width: 24px;
+        height: 24px;
+        position: absolute;
+        top: 3px;
+        left: 12px;
+    }
+
+    &__temp {
+        position: absolute;
+        top: 9px;
+        left: 44px;
+    }
 }
