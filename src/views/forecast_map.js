@@ -1,4 +1,5 @@
 var TabPaneView = require('./tab_pane');
+var fetchHelper = require('../utils/fetch_helper');
 var balloonTemplate = require('../templates/forecast_map_balloon.hbs');
 var iconTemplate = require('../templates/forecast_map_icon.hbs');
 
@@ -29,6 +30,17 @@ var ForecastMapView = TabPaneView.extend({
             iconImageSize: [68, 42],
             iconImageOffset: [-20, -42],
         });
+
+        if (!fact) {
+            p.events.once('balloonopen', function () {
+                fetchHelper(locality.geoid).then(function (data) {
+                    p.balloon.getData().properties.set('balloonContent', balloonTemplate({
+                        locality: locality,
+                        fact: data.today
+                    }));
+                });
+            });
+        }
 
         return p;
     },
