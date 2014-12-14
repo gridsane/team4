@@ -1,3 +1,4 @@
+var _ = require('underscore');
 var TabPaneView = require('./tab_pane');
 var fetchHelper = require('../utils/fetch_helper');
 var balloonTemplate = require('../templates/forecast_map_balloon.hbs');
@@ -9,6 +10,7 @@ var ForecastMapView = TabPaneView.extend({
     placemarks: [],
     map: null,
     clasterer: null,
+    loading: false,
 
     initialize: function (options) {
         this.initializeTabs(options.state);
@@ -16,11 +18,11 @@ var ForecastMapView = TabPaneView.extend({
         this.state.on('change:locality', this.render, this);
     },
 
-    createPlacemark: function (locality, fact) {
-        var p = new ymaps.Placemark([locality.lat, locality.lon], {
-            balloonContent: fact ? balloonTemplate({
+    createPlacemark: function (locality, model) {
+        var placemark = new ymaps.Placemark([locality.lat, locality.lon], {
+            balloonContent: model ? balloonTemplate({
                 locality: locality,
-                fact: fact.toJSON()
+                today: model.toJSON()
             }) : '<img src="/assets/images/ajax-loader.gif"/>',
             iconContent: iconTemplate({
                 temp: locality.temp,
@@ -33,57 +35,61 @@ var ForecastMapView = TabPaneView.extend({
             iconImageOffset: [-20, -42],
         });
 
-        if (!fact) {
-            p.events.once('balloonopen', function () {
+        if (!model) {
+            placemark.events.once('balloonopen', function () {
                 fetchHelper(locality.geoid).then(function (data) {
-                    p.balloon.getData().properties.set('balloonContent', balloonTemplate({
+                    placemark.balloon.getData().properties.set('balloonContent', balloonTemplate({
                         locality: locality,
-                        fact: data.today
+                        today: data.today
                     }));
                 });
             });
         }
 
-        return p;
+        return placemark;
     },
 
     boundsChange: function (event) {
+
+        if (this.loading) {
+            return;
+        }
+
         var self = this;
         var bounds = this.map.getBounds();
+        var currentGeoid = self.state.get('locality').geoid;
+
+        this.loading = true;
 
         $.get('http://ekb.shri14.ru/api/map-data', {
             lt: [bounds[0][1], bounds[1][0]].join(','),
             rb: [bounds[1][1], bounds[0][0]].join(','),
             zoom: this.map.getZoom()
         }).done(function (localities) {
-            var prevGeoids = [];
-            var nextPlacemarks = [];
+
+            var prevGeoids = _.keys(self.placemarks);
             var nextGeoids = [];
 
-            for (var i = localities.length - 1; i >= 0; i--) {
-                var placemark = self.createPlacemark(localities[i]);
-                nextGeoids.push(localities[i].geoid);
-                nextPlacemarks.push({
-                    geoid: localities[i].geoid,
-                    placemark: placemark
-                });
-            };
-
-            for (var i = self.placemarks.length - 1; i >= 0; i--) {
-                if (-1 === nextGeoids.indexOf(self.placemarks[i].geoid)) {
-                    self.clasterer.remove(self.placemarks[i].placemark);
-                } else {
-                    prevGeoids.push(self.placemarks[i].geoid);
+            _.each(localities, function (locality) {
+                var geoid = locality.geoid;
+                nextGeoids.push(geoid.toString());
+                if (!this.placemarks[geoid]) {
+                    var model = (geoid === this.state.get('locality').geoid)
+                        ? this.model
+                        : null;
+                    var placemark = this.createPlacemark(locality, model);
+                    this.placemarks[geoid] = placemark;
+                    this.clasterer.add(placemark)
                 }
-            };
+            }, self);
 
-            for (var i = nextPlacemarks.length - 1; i >= 0; i--) {
-                if (-1 === prevGeoids.indexOf(nextPlacemarks[i].geoid)) {
-                    self.clasterer.add(nextPlacemarks[i].placemark);
-                }
-            };
+            var toDelete = _.difference(prevGeoids, nextGeoids);
+            _.each(toDelete, function (geoid) {
+                this.clasterer.remove(this.placemarks[geoid]);
+                delete this.placemarks[geoid];
+            }, self);
 
-            self.placemarks = nextPlacemarks;
+            self.loading = false;
         });
     },
 
@@ -103,25 +109,13 @@ var ForecastMapView = TabPaneView.extend({
                     self.boundsChange(event);
                 });
 
-                locality.temp = self.model.get('temp');
-                locality.weather_icon = self.model.get('weather_icon');
-
-                var placemark = self.createPlacemark(locality, self.model);
-                self.placemarks.push({
-                    geoid: locality.geoid,
-                    placemark: placemark
-                });
-
                 self.clasterer = new ymaps.Clusterer();
-                self.clasterer.add(placemark);
                 self.map.geoObjects.add(self.clasterer);
 
                 self.boundsChange();
             });
 
         } else {
-            this.map.geoObjects.removeAll();
-            this.map.geoObjects.add(self.createPlacemark(locality, self.model));
             this.map.setCenter([locality.lat, locality.lon]);
             this.map.setZoom(locality.zoom);
         }
