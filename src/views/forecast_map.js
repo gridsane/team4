@@ -12,10 +12,24 @@ var ForecastMapView = TabPaneView.extend({
     clasterer: null,
     loading: false,
 
+    events: {
+        "click .foreacst_map__balloon-more": "changeLocality"
+    },
+
     initialize: function (options) {
         this.initializeTabs(options.state);
         this.state = options.state;
         this.state.on('change:locality', this.render, this);
+    },
+
+    changeLocality: function (e) {
+        var geoid = $(e.toElement).data('geoid');
+        this.state.set({
+            geoid: geoid,
+            tab: 'full'
+        });
+
+        e.preventDefault();
     },
 
     createPlacemark: function (locality, model) {
